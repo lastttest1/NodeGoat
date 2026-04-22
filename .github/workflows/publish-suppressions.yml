@@ -1,0 +1,39 @@
+name: Publish Suppressions
+on:
+  workflow_dispatch:
+permissions: {}
+jobs:
+  update_suppression:
+    permissions:
+      contents: write
+    name: Publish Suppressions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: |
+          npm install fs
+      - name: Create Generated Suppressions XML
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const generatedSuppressions = fs.readFileSync('generatedSuppressions.xml', 'utf8');
+            if (!fs.existsSync('./suppressions')){
+                fs.mkdirSync('./suppressions');
+            }
+            fs.appendFileSync('suppressions/publishedSuppressions.xml',
+            `<?xml version="1.0" encoding="UTF-8"?>
+            <suppressions>
+            ${generatedSuppressions}
+            </suppressions>`,
+            function (err) {
+              if (err) throw err;
+              console.log('publishedSuppressions.xml created');
+            });
+      - name: Publish Updated Suppressions
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: suppressions
+          target-folder: suppressions
